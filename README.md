@@ -58,9 +58,23 @@ Use **Alexa+ demo** for the easiest real protocol walkthrough. For another clien
 
 `tests/integration.test.ts` launches a separate server and temporary database, connects the official MCP SDK client, exercises tools and tests unauthorized/cross-user requests. See `MCP_TEST_REPORT.md` and `ALEXA_HACKATHON_GUIDE.md`.
 
+## Deploy on Render
+
+The repository includes [`render.yml`](render.yml). In the [Render dashboard](https://dashboard.render.com/), select **New → Blueprint**, connect `rajratanrr/claimmate`, choose branch `main`, and set **Blueprint Path** to `render.yml` (Render's default is `render.yaml`). Review the service and disk costs, then deploy.
+
+The Blueprint provisions one **paid `1c-2g` web service (1 CPU, 2 GB RAM)** with a **1 GB persistent disk**. OCR benefits from the extra memory. [Render's free services cannot attach persistent disks](https://render.com/docs/disks), so switching this SQLite app to the free tier would lose saved data on restarts/redeploys. No cloud resources are created by adding this file.
+
+The build installs the pinned pnpm dependencies, including the build tools and `tsx` runtime, then builds the frontend. Startup runs the Express server and applies database migrations after the disk is mounted. Render supplies `PORT`; the server binds to `0.0.0.0`, serves the frontend/API/MCP together, and answers health checks at `/api/health`. Guided mode and receipt OCR require no API key.
+
+- **Database:** `/var/data/claimmate/claimmate.sqlite` (with its WAL/SHM files).
+- **Original receipts:** `/var/data/claimmate/uploads/` on the same persistent disk.
+- **Sign-in:** HTTPS-only cookies. Render's assigned `RENDER_EXTERNAL_URL` is automatically allowed. For a custom domain, add its exact HTTPS origin to `ALLOWED_ORIGINS` in Render's Environment settings; separate additional origins with commas.
+- **First visit:** open the assigned HTTPS URL and create an account. The hosted database starts empty; your local account and uploads are not automatically copied.
+- **Verify:** upload a sample receipt, confirm the details, then redeploy and sign back in to check that saved records and original downloads remain available. Keep one instance and back up the database plus uploads.
+
 ## Deployment boundary
 
-This checkout is an ordinary Express/SQLite app, not the unavailable earlier Sites/Vinext project. No Site was registered, no public deployment exists, and no Amazon add-on was installed. For deployment use a Node 24 host with a durable volume, HTTPS reverse proxy, exact `ALLOWED_ORIGINS`, `COOKIE_SECURE=true`, backups and request/upload limits. Set HOST only as appropriate for the host network. `VolumeStorage` implements the `PrivateStorage` adapter for persistent-volume production hosting. Never place the database/uploads on ephemeral serverless disk or publicly served static storage. Multi-instance deployments need a coordinated database/storage strategy; this prototype is single-instance.
+This checkout is an ordinary Express/SQLite app, not the unavailable earlier Sites/Vinext project. No Site was registered and no Amazon add-on was installed. Adding the Render Blueprint does not deploy the app. For deployment use a Node 24 host with a durable volume, HTTPS reverse proxy, exact allowed origins, `COOKIE_SECURE=true`, backups and request/upload limits. Set HOST only as appropriate for the host network. `VolumeStorage` implements the `PrivateStorage` adapter for persistent-volume production hosting. Never place the database/uploads on ephemeral serverless disk or publicly served static storage. Multi-instance deployments need a coordinated database/storage strategy; this prototype is single-instance.
 
 Actual Alexa+ account linking needs partner access and additional OAuth/onboarding implementation. The official hackathon FAQ accepts local runnable demonstrations; see the linked guide. Live AI and arbitrary web company discovery remain unimplemented by the user's guided-mode choice.
 

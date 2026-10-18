@@ -15,7 +15,13 @@ import {pdfPacket} from './packet.ts';
 import {handleMcp} from './mcp.ts';
 import {findSupport} from './support.ts';
 export const app=express();app.disable('x-powered-by');
-const port=Number(process.env.PORT||3000);const allowed=new Set((process.env.ALLOWED_ORIGINS||`http://localhost:${port},http://127.0.0.1:${port}`).split(','));
+const port=Number(process.env.PORT||3000);
+// Render supplies the assigned HTTPS URL; custom domains can be added explicitly.
+// Never derive trusted origins from request headers.
+const renderOrigin=process.env.RENDER_EXTERNAL_URL?new URL(process.env.RENDER_EXTERNAL_URL).origin:undefined;
+const defaultOrigins=renderOrigin?'':`http://localhost:${port},http://127.0.0.1:${port}`;
+const allowed=new Set((process.env.ALLOWED_ORIGINS||defaultOrigins).split(',').map(origin=>origin.trim()).filter(Boolean));
+if(renderOrigin)allowed.add(renderOrigin);
 app.use((req,res,next)=>{res.set({'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','X-Frame-Options':'DENY','Cache-Control':'no-store'});if(req.headers.origin&&!allowed.has(req.headers.origin)){res.status(403).json({error:'Origin not allowed'});return;}if(req.headers['sec-fetch-site']==='cross-site'){res.status(403).json({error:'Cross-site access rejected'});return;}next();});
 app.use(express.json({limit:'300kb'}));
 app.get('/api/health',(_req,res)=>res.json({ok:true,mode:'Guided mode — AI not connected',mcp_protocol:'2025-11-25'}));

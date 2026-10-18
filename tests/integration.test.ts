@@ -16,6 +16,7 @@ let dir='',base='',server:ChildProcess|undefined,logs='';
 let aliceCookie='',bobCookie='',aliceToken='',bobToken='';
 let alice:Client|undefined,bob:Client|undefined,purchase:any,receipt:any,policy:any,claim:any;
 const protocol='2025-11-25';
+const renderOrigin='https://claimmate-integration.onrender.com';
 const mcpHeaders={'Content-Type':'application/json',Accept:'application/json, text/event-stream','MCP-Protocol-Version':protocol};
 
 async function freePort(){
@@ -48,7 +49,7 @@ function resultError(result:any,match:RegExp){
 before(async()=>{
  dir=await mkdtemp(path.join(tmpdir(),'claimmate-http-test-'));
  const port=await freePort();base=`http://127.0.0.1:${port}`;
- server=spawn(process.execPath,['--import','tsx','server/index.ts'],{cwd:root,env:{...process.env,DATA_DIR:dir,UPLOAD_DIR:path.join(dir,'uploads'),PORT:String(port),HOST:'127.0.0.1',NODE_ENV:'production',ALLOWED_ORIGINS:base},stdio:['ignore','pipe','pipe']});
+ server=spawn(process.execPath,['--import','tsx','server/index.ts'],{cwd:root,env:{...process.env,DATA_DIR:dir,UPLOAD_DIR:path.join(dir,'uploads'),PORT:String(port),HOST:'127.0.0.1',NODE_ENV:'production',ALLOWED_ORIGINS:` ${base} `,RENDER_EXTERNAL_URL:renderOrigin,COOKIE_SECURE:'true'},stdio:['ignore','pipe','pipe']});
  server.stdout?.on('data',chunk=>{logs=(logs+chunk).slice(-32000);});
  server.stderr?.on('data',chunk=>{logs=(logs+chunk).slice(-32000);});
  const deadline=Date.now()+20000;
@@ -59,7 +60,7 @@ before(async()=>{
  }
  for(const who of ['alice','bob']){
   const response=await request('/api/register','POST',{email:`${who}@integration.example`,password:'integration-test-password'},'');
-  assert.equal(response.status,200);const cookie=response.headers.get('set-cookie')?.split(';')[0];assert(cookie);
+  assert.equal(response.status,200);const setCookie=response.headers.get('set-cookie');assert.match(setCookie||'',/; Secure/i);const cookie=setCookie?.split(';')[0];assert(cookie);
   const {token}=await json('/api/mcp-token','POST',{},cookie);
   if(who==='alice'){aliceCookie=cookie;aliceToken=token;}else{bobCookie=cookie;bobToken=token;}
  }
@@ -84,13 +85,15 @@ test('HTTP health identifies guided mode; authentication protects API and MCP',a
  assert.equal(invalid.status,401);
 });
 
-test('HTTP rejects foreign origins and cross-site requests; allows configured origin',async()=>{
- const unsafeHeaders:Record<string,string>[]=[{Origin:'https://untrusted.example'},{'Sec-Fetch-Site':'cross-site'}];
+test('HTTP allows Render and configured origins while rejecting lookalikes and cross-site requests',async()=>{
+ const unsafeHeaders:Record<string,string>[]=[{Origin:'https://untrusted.example'},{Origin:renderOrigin+'.untrusted.example'},{Origin:renderOrigin.replace('https:','http:')},{'Sec-Fetch-Site':'cross-site'}];
  for(const headers of unsafeHeaders){
   const response=await fetch(base+'/mcp',{method:'POST',headers:{...mcpHeaders,Authorization:`Bearer ${aliceToken}`,...headers},body:'{}'});
   assert.equal(response.status,403);
  }
- const allowed=await fetch(base+'/api/purchases',{headers:{Cookie:aliceCookie,Origin:base}});assert.equal(allowed.status,200);
+ for(const origin of [base,renderOrigin]){
+  const allowed=await fetch(base+'/api/purchases',{headers:{Cookie:aliceCookie,Origin:origin}});assert.equal(allowed.status,200);
+ }
 });
 
 test('real SDK initializes stateless Streamable HTTP with protocol 2025-11-25 and lists ten tools',async()=>{

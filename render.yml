@@ -1,0 +1,32 @@
+# In Render: New > Blueprint, select this repo, set Blueprint Path to render.yml.
+# This creates a PAID service and disk. Review Render's cost before deploying.
+services:
+  - type: web
+    name: claimmate
+    runtime: node
+    branch: main
+    # 2 GB provides room for server-side receipt OCR alongside the web server.
+    plan: 1c-2g
+    numInstances: 1
+    buildCommand: npx --yes pnpm@11.25.0 install --frozen-lockfile --prod=false && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DATA_DIR
+        value: /var/data/claimmate
+      - key: UPLOAD_DIR
+        value: /var/data/claimmate/uploads
+    # Startup applies migrations after Render mounts this volume.
+    # Do not move SQLite migration to buildCommand or preDeployCommand.
+    disk:
+      name: claimmate-data
+      mountPath: /var/data
+      sizeGB: 1
