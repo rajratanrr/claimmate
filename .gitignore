@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env*
+!.env.example
+data/
+tmp/
+*.log
+
+# Local OS/package-manager artifacts
+.DS_Store
+.pnpm-store/
+# Private database files, including journals and backups
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*

@@ -1,0 +1,6 @@
+FICTIONAL SAMPLE RECEIPT — manual upload practice
+Product: SoundArc Studio Headphones
+Merchant: Fictional Northstar Store
+Purchase date: 2026-06-19
+Total: INR 7999.00
+Order: DEMO-UPLOAD-001

@@ -1,0 +1,10 @@
+import {savePurchase,confirmDeadline,removePurchase,listPurchases} from './services.ts';
+import {upload} from './documents.ts';
+import {run} from './db.ts';
+import {readFile} from 'node:fs/promises';
+export async function seed(owner:string){if(listPurchases(owner).some(p=>p.sample))return {message:'Samples already exist. Reset samples to regenerate them.'};const today=new Date().toISOString().slice(0,10);const ago=(days:number)=>new Date(Date.parse(today+'T00:00:00Z')-days*86400000).toISOString().slice(0,10);
+ const items=[['SoundArc Headphones','Electronics',120,799900,true],['Morning Ritual Kettle','Home',26,249900,true],['Everyday Backpack','Other',10,189900,false],['SoundArc Headphones Mini','Electronics',90,399900,true]] as const;
+ for(const [product,category,days,price,policy] of items){const p=savePurchase(owner,{product,merchant:'Fictional Northstar Store',category,purchase_date:ago(days),price_minor:price,currency:'INR',order_ref:'DEMO-'+days,confirmed:true});run('UPDATE purchases SET sample=1 WHERE id=?',p.id);await upload(owner,p.id,'receipt','sample-receipt.txt',Buffer.from(`FICTIONAL SAMPLE — Generated ${today}\nProduct: ${product}\nMerchant: Fictional Northstar Store\nPurchase date: ${ago(days)}\nTotal: INR ${(price/100).toFixed(2)}\nOrder: DEMO-${days}\n`));if(policy){const d=await upload(owner,p.id,'policy','sample-policy.txt',await readFile('fixtures/policy.txt'));const {evidence}=await import('./documents.ts');const s=evidence(owner,p.id)[0];for(const kind of ['return','warranty'] as const)confirmDeadline(owner,p.id,{passage_id:s.id,kind,trigger:'purchase',trigger_date:ago(days),period:kind==='return'?30:1,unit:kind==='return'?'days':'years',inclusive:false,confirmed:true});}}
+ for(const p of listPurchases(owner).filter(p=>p.sample))run('UPDATE purchases SET confirmed=1 WHERE id=?',p.id);
+ return {message:'Four fictional samples added. Dates are relative to today.'};}
+export async function resetSamples(owner:string){for(const p of listPurchases(owner).filter(p=>p.sample))await removePurchase(owner,p.id);return seed(owner);}
