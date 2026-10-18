@@ -1,4 +1,4 @@
-# In Render: New > Blueprint, select this repo, set Blueprint Path to render.yml.
+# In Render: New > Blueprint, select this repo; the default path is render.yaml.
 # This creates a PAID service and disk. Review Render's cost before deploying.
 services:
   - type: web

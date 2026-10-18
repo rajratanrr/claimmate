@@ -60,7 +60,7 @@ Use **Alexa+ demo** for the easiest real protocol walkthrough. For another clien
 
 ## Deploy on Render
 
-The repository includes [`render.yml`](render.yml). In the [Render dashboard](https://dashboard.render.com/), select **New → Blueprint**, connect `rajratanrr/claimmate`, choose branch `main`, and set **Blueprint Path** to `render.yml` (Render's default is `render.yaml`). Review the service and disk costs, then deploy.
+The repository includes [`render.yaml`](render.yaml). In the [Render dashboard](https://dashboard.render.com/), select **New → Blueprint**, connect `rajratanrr/claimmate`, choose branch `main`, and leave **Blueprint Path** at its default, `render.yaml`. Review the service and disk costs, then deploy.
 
 The Blueprint provisions one **paid `1c-2g` web service (1 CPU, 2 GB RAM)** with a **1 GB persistent disk**. OCR benefits from the extra memory. [Render's free services cannot attach persistent disks](https://render.com/docs/disks), so switching this SQLite app to the free tier would lose saved data on restarts/redeploys. No cloud resources are created by adding this file.
 
