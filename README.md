@@ -4,6 +4,8 @@ A working local product-aftercare prototype for the Alexa+ hackathon track. **Gu
 
 ## Start here
 
+New to the app? Read the [easy customer guide](CUSTOMER_GUIDE.md) or [download the PDF guide](output/pdf/ClaimMate-Customer-Guide.pdf) for the complete purchase-to-support journey.
+
 Requires Node 24 and pnpm (lockfile included).
 
 ```sh
